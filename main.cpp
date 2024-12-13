@@ -14,7 +14,6 @@
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 
-
 using namespace std;
 
 using namespace web;
@@ -23,11 +22,12 @@ using namespace web::http::client;
 using namespace web::websockets::client;
 
 // Global token to store authentication token
-std::string access_token;
+string access_token;
 
 class deribitManagement{
         websocket_client ws_client;
         const utility::string_t wsUrl = U("wss://test.deribit.com/ws/api/v2");
+    
     public:
         // Function to connect to WebSocket
         deribitManagement(string clientId, string clientSecret){
@@ -35,7 +35,7 @@ class deribitManagement{
                 // Connect to WebSocket
                 websocket_outgoing_message outgoing_msg;
                 ws_client.connect(wsUrl).then([&]() {
-                    std::cout << "WebSocket connected!" << std::endl;
+                    cout << "WebSocket connected!" << endl;
 
                     // Authenticate WebSocket connection
                     json::value auth_msg;
@@ -50,16 +50,16 @@ class deribitManagement{
                     outgoing_msg.set_utf8_message(auth_msg.serialize());
                     ws_client.send(outgoing_msg).wait();
                     // ws_client.send(outgoing_msg.set_utf8_message(auth_msg.serialize())).wait();
-                    std::cout << "Auth message sent!" << std::endl;
+                    cout << "Auth message sent!" << endl;
                 }).wait();
 
                 // Listen for server messages
                 ws_client.receive().then([](websocket_incoming_message msg) {
                     auto response = msg.extract_string().get();
-                    std::cout << "Received message: " << response << std::endl;
+                    cout << "Received message: " << response << endl;
                 }).wait();
-            } catch (const std::exception &e) {
-                std::cerr << "Exception occurred: " << e.what() << std::endl;
+            } catch (const exception &e) {
+                cerr << "Exception occurred: " << e.what() << endl;
             }
             
         }
@@ -84,19 +84,19 @@ class deribitManagement{
                 websocket_outgoing_message buy_msg_out;
                 buy_msg_out.set_utf8_message(buy_msg.serialize());
                 auto res = ws_client.send(buy_msg_out).wait();
-                std::cout << "Buy order sent!" << std::endl;
+                cout << "Buy order sent!" << endl;
                 // cout<<res;
                 ws_client.receive().then([](websocket_incoming_message msg) {
                     auto response = msg.extract_string().get();
-                    std::cout << "Received message: " << response << std::endl;
+                    cout << "Received message: " << response << endl;
                 }).wait();
 
                 // Close the WebSocket connection
                 // ws_client.close().wait();
-                // std::cout << "WebSocket connection closed!" << std::endl;
+                // cout << "WebSocket connection closed!" << endl;
 
-            } catch (const std::exception &e) {
-                std::cerr << "Exception occurred: " << e.what() << std::endl;
+            } catch (const exception &e) {
+                cerr << "Exception occurred: " << e.what() << endl;
             }
         }
 
@@ -120,15 +120,15 @@ class deribitManagement{
                 sell_msg_out.set_utf8_message(sell_msg.serialize());
                 auto res = ws_client.send(sell_msg_out).wait();
                 
-                std::cout << "Sell order sent!" << std::endl;
+                cout << "Sell order sent!" << endl;
                 
                 ws_client.receive().then([](websocket_incoming_message msg) {
                     auto response = msg.extract_string().get();
-                    std::cout << "Received message: " << response << std::endl;
+                    cout << "Received message: " << response << endl;
                 }).wait();
 
-            } catch (const std::exception &e) {
-                std::cerr << "Exception occurred: " << e.what() << std::endl;
+            } catch (const exception &e) {
+                cerr << "Exception occurred: " << e.what() << endl;
             }
         }
 
@@ -145,15 +145,15 @@ class deribitManagement{
                 cancel_msg_out.set_utf8_message(cancel_msg.serialize());
                 auto res = ws_client.send(cancel_msg_out).wait();
                 
-                std::cout << "Sell order sent!" << std::endl;
+                cout << "Sell order sent!" << endl;
                 
                 ws_client.receive().then([](websocket_incoming_message msg) {
                     auto response = msg.extract_string().get();
-                    std::cout << "Received message: " << response << std::endl;
+                    cout << "Received message: " << response << endl;
                 }).wait();
 
-            } catch (const std::exception &e) {
-                    std::cerr << "Exception occurred: " << e.what() << std::endl;
+            } catch (const exception &e) {
+                    cerr << "Exception occurred: " << e.what() << endl;
             }
         }
 
@@ -171,16 +171,47 @@ class deribitManagement{
                 cancel_msg_out.set_utf8_message(cancel_msg.serialize());
                 auto res = ws_client.send(cancel_msg_out).wait();
                 
-                std::cout << "Sell order sent!" << std::endl;
+                cout << "Sell order sent!" << endl;
                 
-                ws_client.receive().then([](websocket_incoming_message msg) {
+                ws_client.receive().then([this](websocket_incoming_message msg) {
                     auto response = msg.extract_string().get();
-                    std::cout << "Received message: " << response << std::endl;
+                    cout << "Received message: " << response << endl;
                 }).wait();
 
-            } catch (const std::exception &e) {
-                    std::cerr << "Exception occurred: " << e.what() << std::endl;
+            } catch (const exception &e) {
+                    cerr << "Exception occurred: " << e.what() << endl;
             }
+        }
+
+        void getCurrentPositions(string currency, string kind){
+            try{
+                json::value getCurrentPosition_msg;
+                getCurrentPosition_msg[U("method")] = json::value::string(U("private/get_positions"));
+                getCurrentPosition_msg[U("params")] = json::value::object();
+                getCurrentPosition_msg[U("params")][U("currency")] = json::value::string(currency);
+                getCurrentPosition_msg[U("params")][U("kind")] = json::value::string(kind);
+                getCurrentPosition_msg[U("jsonrpc")] = json::value::string(U("2.0"));
+                getCurrentPosition_msg[U("id")] = json::value::number(2929);
+                
+                websocket_outgoing_message getCurrentPosition_msg_out;
+                getCurrentPosition_msg_out.set_utf8_message(getCurrentPosition_msg.serialize());
+                auto res = ws_client.send(getCurrentPosition_msg_out).wait();
+                
+                cout << "Sell order sent!" << endl;
+                
+                ws_client.receive().then([this](websocket_incoming_message msg) {
+                    auto response = msg.extract_string().get();
+                    cout << "Received message: " << response << endl;
+                }).wait();
+
+            } catch (const exception &e) {
+                    cerr << "Exception occurred: " << e.what() << endl;
+            }
+        }
+
+        ~deribitManagement(){
+            ws_client.close().wait();
+            cout << "WebSocket connection closed!" << endl;
         }
 };
 
@@ -188,20 +219,20 @@ class deribitManagement{
 
 int main() {
     // Setup API credentials
-    std::string apiKey = "osXNyugb";
-    std::string secretKey = "chwkEigRazYTFX03X_9LsWZ6-j8v4YfcowPJu3jEaH0";
-    
-    // fetchAuthToken();
+    string apiKey = "osXNyugb";
+    string secretKey = "chwkEigRazYTFX03X_9LsWZ6-j8v4YfcowPJu3jEaH0";
+    string instrument = "ETH-PERPETUAL";
     try{
         // placeOrder();
         deribitManagement test(apiKey, secretKey);
         // test.placeOrder("ETH-PERPETUAL", 1, 5909);
         // test.sellOrder("ETH-PERPETUAL", 1, 5909);
         // test.cancelOrder("ETH-SLTS-514823");
-        
-    } catch (std::exception e) {
-        std::cerr << "Failed to fetch access token. Exiting." << std::endl;
+        test.getOrderBook(instrument, 5);
+        // test.getCurrentPositions("ETH", "future");        
+    } catch (exception e) {
+        cerr << "Failed to fetch access token. Exiting." << endl;
     }
 
-    // return 0;
+    return 0;
 }
